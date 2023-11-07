@@ -5,7 +5,10 @@ import json
 import pandas as pd
 import seaborn as sns
 
+# very simple example of the simulation at work
+
 # obtained from https://stackoverflow.com/questions/12309269/how-do-i-write-json-data-to-a-file
+# might be useful for later, as of now is not used
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.ndarray):
