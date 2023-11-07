@@ -5,12 +5,6 @@ import copy
 
 class rxn_model:
 	def __init__(self, rxn_dict=None,param_dict = None):
-		# model_dict should have keys:
-		# model_name
-		# rxn_dict
-		# met_dict
-		# gene_dict
-		# gurobi_token
 		if rxn_dict is not None:
 			self.rxn_dict = rxn_dict
 		else:
@@ -46,18 +40,20 @@ class rxn_model:
 			species_values.update(self.rxn_dict[rxn].reactant_dict)
 			species_values.update(self.rxn_dict[rxn].product_dict)
 		
-		
+		# initializes all species, does this from reactions so species dont need to be explicitly declared
 		for rxn in species_values.keys():
 			species_values[rxn] = 0
-		
+
+		# sets initial value conditions
 		if ivc is not None:
 			species_values.update(ivc)
+
+		
 		initial_species = copy.copy(species_values)
 		prop_names_ordered = list(propensity_values.keys())
 		prop_values_ordered = list(propensity_values.values())
-		print(prop_names_ordered)
-		print(prop_values_ordered)
-		
+
+		# initializes trajectories for all species
 		species_values_traj = copy.copy(species_values)
 		for species in species_values_traj.keys():
 			species_values_traj[species] = np.zeros((n,np.size(t_vals)))
@@ -68,6 +64,8 @@ class rxn_model:
 			species_values = copy.copy(initial_species)
 			for t_val_ind in range(1,len(t_vals[1:])+1):
 				while t_val_ind < len(t_vals) and t <= t_vals[t_val_ind]:
+
+					# makes increasing list of propensities
 					for ind_val in range(len(prop_values_ordered)):
 						propen = copy.copy(prop_values_ordered[ind_val])
 						
@@ -79,20 +77,19 @@ class rxn_model:
 							prop_values_ordered_eval[ind_val] = eval(propen)
 						else:
 							prop_values_ordered_eval[ind_val] = eval(propen) + prop_values_ordered_eval[ind_val-1]
-					#print(prop_values_ordered_eval)
-					#print(t)
+					
+					# randomly generates exponential timestep
 					sum_val = np.max(prop_values_ordered_eval)
 					rand_val = random.random()
 					t += 1/sum_val*np.log(1/rand_val)
-					#print(t)
-					#input()
+					
 					# if the timestep goes over the time partition set the species values to be that of the previous iteration
 					while t_val_ind < len(t_vals) and t >= t_vals[t_val_ind]:
 						for species in species_values_traj.keys():
 							species_values_traj[species][repeat_ind,t_val_ind] = species_values[species]
 						t_val_ind+=1
-					#print(species_values_traj)
-					#input()
+
+					# selects a random reaction to fire (in weighted fashion) before running that reaction.
 					prop_values_ordered_eval /= sum_val
 					rand_val = random.random()
 					rxn_to_use = prop_names_ordered[np.where((prop_values_ordered_eval > rand_val))[0][0]]
